@@ -1,0 +1,2 @@
+-- Offline POS System Database Schema
+-- Phase 0 initial schema placeholder
