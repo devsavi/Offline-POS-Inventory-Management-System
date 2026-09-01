@@ -222,11 +222,27 @@ npm run build
 
 ---
 
-### ⬜ Phase 2 — Database Schema & IPC Layer *(Planned)*
-- SQLite schema DDL (`schema.sql`) — all tables
-- Repositories: products, categories, invoices, invoice_items, customers, staff
-- IPC handlers for inventory CRUD (list, create, update, delete, adjust stock)
-- Full `InventoryPage` with live DataTable, add/edit modal, stock adjustment
+### ✅ Phase 2 — Database Schema & IPC Layer *(Complete — 2026-09-01)*
+
+**Deliverables:**
+- [x] `electron/db/schema.sql` — full DDL for 7 tables (`products`, `customers`, `users`, `sales`, `sale_items`, `assets`, `settings`); idempotent `CREATE TABLE IF NOT EXISTS`; single-row `settings` seeded via `INSERT OR IGNORE`
+- [x] `electron/db/database.ts` — singleton `getDatabase()` that opens `offline-pos.db` in `app.getPath('userData')`, runs `schema.sql` on first launch, and exposes `closeDatabase()` for graceful shutdown
+- [x] `electron/db/repositories/products.repository.ts` — CRUD + barcode lookup + low-stock aggregate + category count + search
+- [x] `electron/db/repositories/customers.repository.ts` — CRUD + search + customer purchase history aggregate
+- [x] `electron/db/repositories/users.repository.ts` — CRUD + per-cashier sales summary aggregate
+- [x] `electron/db/repositories/sales.repository.ts` — atomic `createSale` transaction (inserts header + items + decrements stock) + daily revenue + top products + date-range revenue aggregates
+- [x] `electron/db/repositories/saleItems.repository.ts` — CRUD for individual line items
+- [x] `electron/db/repositories/assets.repository.ts` — CRUD + warranty-expiry alert aggregate + status filter
+- [x] `electron/db/repositories/settings.repository.ts` — single-row get/update + admin password hash setter
+- [x] `electron/ipc/inventory.ipc.ts` — IPC handlers for `products:*` channels
+- [x] `electron/ipc/billing.ipc.ts` — IPC handlers for `billing:*` channels (sales + aggregates)
+- [x] `electron/ipc/customers.ipc.ts` — IPC handlers for `customers:*` channels
+- [x] `electron/ipc/users.ipc.ts` — IPC handlers for `users:*` channels
+- [x] `electron/ipc/assets.ipc.ts` — IPC handlers for `assets:*` channels
+- [x] `electron/ipc/settings.ipc.ts` — IPC handlers for `settings:*` channels
+- [x] `electron/preload.ts` — restructured: exposes typed `window.api` namespace object (products / billing / customers / users / assets / settings) via `contextBridge`; raw `ipcRenderer` shim retained for backwards compat
+- [x] `electron/electron-env.d.ts` — full `Window.api` TypeScript declaration; all entity interfaces (`Product`, `Customer`, `User`, `Sale`, `SaleWithItems`, `Asset`, `Settings`, …) declared as globals for renderer use
+- [x] `electron/main.ts` — updated: calls `getDatabase()` then registers all six IPC handler modules before `createWindow()`; `closeDatabase()` hooked to `before-quit`
 
 ### ⬜ Phase 3 — Billing / POS Register *(Planned)*
 - Full POS UI: product grid, cart, quantity stepper, discount input

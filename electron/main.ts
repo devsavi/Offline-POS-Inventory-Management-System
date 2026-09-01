@@ -1,6 +1,13 @@
 import { app, BrowserWindow } from 'electron'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
+import { getDatabase, closeDatabase } from './db/database.js'
+import { registerInventoryHandlers } from './ipc/inventory.ipc.js'
+import { registerBillingHandlers } from './ipc/billing.ipc.js'
+import { registerCustomersHandlers } from './ipc/customers.ipc.js'
+import { registerUsersHandlers } from './ipc/users.ipc.js'
+import { registerAssetsHandlers } from './ipc/assets.ipc.js'
+import { registerSettingsHandlers } from './ipc/settings.ipc.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -40,7 +47,6 @@ function createWindow() {
   if (VITE_DEV_SERVER_URL) {
     win.loadURL(VITE_DEV_SERVER_URL)
   } else {
-    // win.loadFile('dist/index.html')
     win.loadFile(path.join(RENDERER_DIST, 'index.html'))
   }
 }
@@ -63,4 +69,23 @@ app.on('activate', () => {
   }
 })
 
-app.whenReady().then(createWindow)
+// Gracefully close SQLite connection before the process exits
+app.on('before-quit', () => {
+  closeDatabase()
+})
+
+app.whenReady().then(() => {
+  // 1. Open DB & run idempotent schema migration
+  getDatabase()
+
+  // 2. Register all IPC handlers (must happen before any renderer connects)
+  registerInventoryHandlers()
+  registerBillingHandlers()
+  registerCustomersHandlers()
+  registerUsersHandlers()
+  registerAssetsHandlers()
+  registerSettingsHandlers()
+
+  // 3. Open the main window
+  createWindow()
+})
